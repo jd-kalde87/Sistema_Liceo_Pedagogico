@@ -1,0 +1,517 @@
+/* ============================================= */
+/* ==      1. VARIABLES Y ESTILOS GLOBALES    == */
+/* ============================================= */
+
+:root {
+    --primario: #004aad;
+    --primario-hover: #003b8f;
+    --acento: #ff3131;
+    --acento-hover: #e62222;
+    --blanco: #FFFFFF;
+    --fondo: #f4f7fc;
+    --gris-claro: #eef2f7;
+    --gris-medio: #d1d9e6;
+    --texto-oscuro: #2c3e50;
+    --texto-claro: #5e6a7e;
+    --verde-exito: #2ecc71;
+    --rojo-error: #e74c3c;
+    --sombra: 0 5px 20px rgba(0, 74, 173, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--fondo);
+    color: var(--texto-oscuro);
+}
+
+/* ============================================= */
+/* ==      2. ESTRUCTURA PRINCIPAL (LAYOUT)   == */
+/* ============================================= */
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--primario);
+    color: var(--blanco);
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 5px 0px 20px rgba(0,0,0,0.1);
+}
+
+/* ============================================= */
+/* ==         3. BARRA LATERAL (SIDEBAR)      == */
+/* ============================================= */
+
+.logo-container {
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    text-align: center;
+}
+
+.logo {
+    max-width: 80%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.sidebar h3 {
+    margin: 0;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 1.1rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.95rem;
+}
+
+.sidebar li:hover {
+    background-color: var(--primario-hover);
+}
+
+.sidebar li.active {
+    background-color: var(--acento);
+    border-left-color: var(--blanco);
+    font-weight: bold;
+}
+
+/* ============================================= */
+/* ==      4. COMPONENTES GENERALES           == */
+/* ============================================= */
+
+.card {
+    background-color: var(--blanco);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+    margin-bottom: 2rem;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    background-color: var(--gris-medio);
+    color: #7f8c8d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Variantes de Botones --- */
+.btn-main { background-color: var(--primario); color: var(--blanco); }
+.btn-main:hover { background-color: var(--primario-hover); }
+.btn-secondary { background-color: var(--gris-claro); color: var(--texto-oscuro); }
+.btn-secondary:hover { background-color: var(--gris-medio); }
+.btn-edit { background-color: #3498db; color: white; }
+.btn-delete { background-color: var(--acento); color: white; }
+
+
+/* --- Formularios y Entradas --- */
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--gris-medio);
+    border-radius: 8px;
+    margin-top: 5px;
+    font-size: 16px;
+    background-color: var(--blanco);
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primario);
+    box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.2);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* --- Barras de Acciones y Filtros --- */
+.actions-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+
+/* ============================================= */
+/* ==      5. ESTILOS DE TABLAS               == */
+/* ============================================= */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--gris-claro);
+}
+
+th {
+    background-color: transparent;
+    font-weight: 600;
+    color: var(--texto-claro);
+}
+
+.report-table-container {
+    overflow-x: auto;
+}
+
+.report-table th, .report-table td {
+    white-space: nowrap;
+    padding: 8px 12px;
+}
+
+.report-table .status-paid {
+    color: var(--verde-exito);
+    font-weight: bold;
+    text-align: center;
+}
+
+.report-table .status-unpaid {
+    color: var(--rojo-error);
+    font-weight: bold;
+    text-align: center;
+}
+
+.report-table .text-right {
+    text-align: right;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.report-table tfoot td {
+    font-weight: bold;
+    background-color: var(--gris-claro);
+    border-top: 2px solid var(--gris-medio);
+}
+
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actions-cell button {
+    padding: 5px 10px;
+    font-size: 18px;
+}
+
+
+/* ============================================= */
+/* ==      6. MODALES Y VENTANAS EMERGENTES   == */
+/* ============================================= */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--blanco);
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.modal-body {
+    overflow-y: auto;
+    padding: 1.5rem 1rem;
+    margin: 0;
+}
+
+.alerta-modal {
+    max-width: 500px;
+}
+
+.alerta-header {
+    color: var(--blanco);
+    padding: 1rem;
+    border-radius: 12px 12px 0 0;
+    margin: -2rem -2rem 0;
+}
+
+.alerta-header h2 {
+    color: var(--blanco);
+    border: none;
+}
+
+.alerta-header.exito { background-color: var(--verde-exito); }
+.alerta-header.error { background-color: var(--rojo-error); }
+.alerta-header.info { background-color: var(--primario); }
+
+.alerta-modal .modal-body {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+
+/* ============================================= */
+/* ==      7. ESTILOS ESPECÍFICOS DE VISTAS   == */
+/* ============================================= */
+
+.loader, .empty-state {
+    text-align: center;
+    padding: 4rem;
+    color: var(--texto-claro);
+    font-size: 1.2rem;
+    font-style: italic;
+}
+
+.payment-options-grid, .report-grid, .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.payment-option {
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.payment-option:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 74, 173, 0.2);
+    border-color: var(--primario);
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.payment-form .form-group.span-2, .form-grid .form-group.span-2 {
+    grid-column: span 2;
+}
+
+.report-card ul {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.report-card li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gris-claro);
+}
+
+.student-list-item {
+    list-style: none;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    background-color: var(--gris-claro);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.student-list-item:hover {
+    background-color: var(--gris-medio);
+}
+
+.stats-chart-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.stats-chart-container .chart-canvas {
+    flex: 1 1 200px;
+    max-width: 300px;
+}
+
+.clickable-total {
+    cursor: pointer;
+    text-decoration: underline;
+    color: var(--primario);
+    font-weight: bold;
+}
+
+.clickable-total:hover {
+    color: var(--acento);
+}
+
+.text-muted {
+    color: var(--texto-claro);
+}
+
+
+/* ============================================= */
+/* ==      8. ESTILOS DE CERTIFICADO          == */
+/* ============================================= */
+
+.certificate-container {
+    background: var(--blanco);
+    padding: 2rem;
+    border: 10px solid var(--primario);
+    border-radius: 10px;
+    position: relative;
+    font-family: 'Times New Roman', serif;
+}
+
+.certificate-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.08;
+    pointer-events: none;
+    max-width: 80%;
+}
+
+.certificate-header, .certificate-footer {
+    text-align: center;
+}
+
+.certificate-header h1 {
+    font-size: 2.5rem;
+    color: var(--primario);
+}
+
+.certificate-body {
+    margin: 3rem 0;
+    text-align: justify;
+    font-size: 1.2rem;
+    line-height: 2;
+}
+
+.certificate-body strong {
+    font-weight: bold;
+}
+
+.signature-line {
+    border-bottom: 2px solid var(--texto-oscuro);
+    width: 300px;
+    margin: 4rem auto 0.5rem;
+}
+.letrero {
+  color: var(--blanco);
+}
+
+
+/* ============================================= */
+/* ==      9. MEDIA QUERIES (IMPRESIÓN, MÓVIL)== */
+/* ============================================= */
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .certificate-container, .certificate-container * {
+        visibility: visible !important;
+    }
+    main.main-content {
+        padding: 0 !important;
+    }
+    .certificate-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: auto;
+        border: none;
+        padding: 1in;
+        margin: 0;
+        box-shadow: none;
+        border-radius: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .payment-form .form-group.span-2, .form-grid .form-group.span-2 {
+        grid-column: span 1;
+    }
+}

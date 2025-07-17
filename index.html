@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión Escolar</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app" class="app-container">
+
+        <!-- Sidebar de navegación -->
+        <nav class="sidebar">
+            <div class="logo-container">
+                <img :src="logoBase64" alt="Logo Institución" class="logo">
+                <h3 class="letrero">
+                    Liceo Pedagogico Goticas de Colores
+                </h3>
+            </div>
+            <ul>
+                <li @click="vistaActual = 'estudiantes'"         :class="{ 'active': vistaActual === 'estudiantes' }">
+                    🎓 <span>Estudiantes</span>
+                </li>
+                <li @click="vistaActual = 'pagos'"               :class="{ 'active': vistaActual === 'pagos' }">
+                    💰 <span>Registrar Pago</span>
+                </li>
+                <li @click="vistaActual = 'pagos_realizados'"    :class="{ 'active': vistaActual === 'pagos_realizados' }">
+                    🧾 <span>Historial Pagos</span>
+                </li>
+                <li @click="vistaActual = 'informe_detallado'"   :class="{ 'active': vistaActual === 'informe_detallado' }">
+                    🗒️ <span>Inf. Detallado</span>
+                </li>
+                <li @click="vistaActual = 'Matriculas'"             :class="{ 'active': vistaActual === 'Matriculas' }">
+                    📋 <span>Inf. Matriculas</span>
+                </li>
+                <li @click="vistaActual = 'cartera'"             :class="{ 'active': vistaActual === 'cartera' }">
+                    📋 <span>Inf. Pensiones</span>
+                </li>
+                <li @click="vistaActual = 'loncheras'"           :class="{ 'active': vistaActual === 'loncheras' }">
+                    🍽️ <span>Inf. Loncheras</span>
+                </li>
+                <li @click="vistaActual = 'recaudos'"            :class="{ 'active': vistaActual === 'recaudos' }">
+                    💲 <span>Inf. Recaudos</span>
+                </li>
+                <li @click="vistaActual = 'financiero'"          :class="{ 'active': vistaActual === 'financiero' }">
+                    📈 <span>Inf. Financiero</span>
+                </li>
+                <li @click="vistaActual = 'estadisticas'"        :class="{ 'active': vistaActual === 'estadisticas' }">
+                    📊 <span>Estadísticas</span>
+                </li>
+                <li @click="vistaActual = 'certificados'"        :class="{ 'active': vistaActual === 'certificados' }">
+                    📄 <span>Certificados</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="main-content">
+            <div v-if="isLoading" class="loader">
+                Cargando datos iniciales...
+            </div>
+
+            <!-- Estudiantes -->
+            <section v-else-if="vistaActual === 'estudiantes'">
+                <h1>Control de Estudiantes</h1>
+                <div class="card actions-toolbar">
+                    <button @click="abrirModalNuevo()" class="btn-main">
+                        ➕ Agregar Estudiante
+                    </button>
+                    <div class="filter-group">
+                        <select v-model="filtroNivel">
+                            <option value="">-- Filtrar por Nivel --</option>
+                            <option v-for="nivel in nivelesUnicos">{{ nivel }}</option>
+                        </select>
+                        <select v-model="filtroJornada">
+                            <option value="">-- Filtrar por Jornada --</option>
+                            <option>MAÑANA</option>
+                            <option>TARDE</option>
+                            <option>DOBLE</option>
+                        </select>
+                    </div>
+                    <button @click="mostrarTabla = true" class="btn-secondary">
+                        🔍 Consultar
+                    </button>
+                </div>
+                <div class="card" v-if="mostrarTabla">
+                    <h2>Listado de Estudiantes</h2>
+                    <div class="report-table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nivel</th>
+                                    <th>ID</th>
+                                    <th>Apellidos</th>
+                                    <th>Nombres</th>
+                                    <th>F. Nacimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="est in filteredStudents" :key="est.ID_Estudiante">
+                                    <td>{{ est.Nivel }}</td>
+                                    <td>{{ est.ID_Estudiante }}</td>
+                                    <td>{{ est.Primer_Apellido }} {{ est.Segundo_Apellido }}</td>
+                                    <td>{{ est.Primer_Nombre  }} {{ est.Segundo_Nombre }}</td>
+                                    <td>{{ formatearFecha(est.Fecha_Nacimiento) }}</td>
+                                    <td class="actions-cell">
+                                        <button @click="abrirModalEditar(est)" class="btn-edit">✏️</button>
+                                        <button @click="eliminarEstudiante(est.ID_Estudiante)" class="btn-delete">🗑️</button>
+                                    </td>
+                                </tr>
+                                <tr v-if="!filteredStudents.length">
+                                    <td colspan="6" class="empty-state">
+                                        No se encontraron estudiantes con esos filtros.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pagos -->
+            <section v-else-if="vistaActual === 'pagos'">
+                <h1>Registro de Pagos</h1>
+                <div v-if="!contextoPago" class="payment-options-grid">
+                    <div class="card payment-option" @click="iniciarRegistroPago('Matrícula')">
+                        <h2>REGISTRAR MATRÍCULA</h2>
+                        <p>Registro del pago anual de matrícula.</p>
+                    </div>
+                    <div class="card payment-option" @click="iniciarRegistroPago('Pensión')">
+                        <h2>REGISTRAR PENSIÓN</h2>
+                        <p>Registro del pago de mensualidades.</p>
+                    </div>
+                    <div class="card payment-option" @click="iniciarRegistroPago('Lonchera')">
+                        <h2>REGISTRAR LONCHERA</h2>
+                        <p>Registro de pagos por servicio de lonchera.</p>
+                    </div>
+                </div>
+                <div v-else class="card">
+                    <div class="form-header">
+                        <h2>
+                            Registrando un pago de:
+                            <strong>{{ contextoPago }}</strong>
+                        </h2>
+                        <button @click="contextoPago = null" class="btn-secondary">
+                            ← Volver
+                        </button>
+                    </div>
+                    <div class="form-grid payment-form">
+                        <div class="form-group span-2">
+                            <label>1. Seleccione el Estudiante</label>
+                            <select v-model="pagoForm.ID_Estudiante" @change="actualizarMontoPago()" required>
+                                <option disabled value="">
+                                    -- Buscar estudiante... --
+                                </option>
+                                <option v-for="est in estudiantesActivos" :value="est.ID_Estudiante">
+                                    {{ est.Primer_Nombre }} {{ est.Primer_Apellido }} - {{ est.Nivel }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Número de Comprobante</label>
+                            <input type="text" v-model="pagoForm.Numero_comprobante" placeholder="Ej: 00123">
+                        </div>
+                        <div class="form-group">
+                            <label>3. Valor a Pagar</label>
+                            <input type="number" v-model.number="pagoForm.Valor_Pagado" placeholder="0" required>
+                        </div>
+                        <div class="form-group" v-if="contextoPago === 'Pensión' || contextoPago === 'Lonchera'">
+                            <label>4. Mes Correspondiente</label>
+                            <select v-model="pagoForm.Mes_Pension" required>
+                                <option v-for="mes in meses">{{ mes }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>5. Método de Pago</label>
+                            <select v-model="pagoForm.Metodo_Pago" required>
+                                <option>EFECTIVO</option>
+                                <option>NEQUI</option>
+                                <option>DAVIPLATA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>6. Fecha del Pago</label>
+                            <input type="date" v-model="pagoForm.Fecha_Pago" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Observaciones (Opcional)</label>
+                            <input type="text" v-model="pagoForm.Observaciones" placeholder="Ej: Abono...">
+                        </div>
+                        <div class="form-actions span-2">
+                            <button @click="registrarPago" class="btn-main" :disabled="isSaving">
+                                {{ isSaving ? 'Registrando...' : 'Confirmar Pago' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pagos realizados -->
+            <section v-else-if="vistaActual === 'pagos_realizados'">
+                <h1>Historial de Pagos Realizados</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Nivel:</label>
+                        <select v-model="filtroNivelPagos">
+                            <option value="">Todos</option>
+                            <option v-for="nivel in nivelesUnicos">{{ nivel }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarListaPagos" class="btn-main">
+                        🔍 Generar Listado
+                    </button>
+                </div>
+                <div class="card" v-if="listaEstudiantesPagos.length > 0">
+                    <h2>Seleccione un estudiante para ver su historial</h2>
+                    <ul class="report-card">
+                        <li v-for="est in listaEstudiantesPagos" class="student-list-item" @click="mostrarHistorial(est)">
+                            {{ est.Primer_Nombre }} {{ est.Segundo_Nombre }} {{ est.Primer_Apellido }} {{ est.Segundo_Apellido }} - {{ est.Nivel }}
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Informe detallado -->
+            <section v-else-if="vistaActual === 'informe_detallado'">
+                <h1>Informe Detallado por Estudiante</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Nivel:</label>
+                        <select v-model="filtroNivelDetalle">
+                            <option value="">Todos los Niveles</option>
+                            <option v-for="nivel in nivelesUnicos">{{ nivel }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarReporteDetallado" class="btn-main">
+                        🔍 Generar Informe
+                    </button>
+                </div>
+                <div class="card" v-if="reporteDetallado.length > 0">
+                    <h2>Totales Pagados por Estudiante</h2>
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th class="text-right">Total Matrícula</th>
+                                    <th class="text-right">Total Pensión</th>
+                                    <th class="text-right">Total Lonchera</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in reporteDetallado" :key="item.id">
+                                    <td>{{ item.nombre }}</td>
+                                    <td class="text-right">
+                                        ${{ item.totalMatricula.toLocaleString('es-CO') }}
+                                    </td>
+                                    <td class="text-right clickable-total" @click="mostrarDetallesPago(item, 'Pensión')">
+                                        ${{ item.totalPension.toLocaleString('es-CO') }}
+                                    </td>
+                                    <td class="text-right">
+                                        <span v-if="item.tomaLonchera === 'SI'" class="clickable-total" @click="mostrarDetallesPago(item, 'Lonchera')">
+                                            ${{ item.totalLonchera.toLocaleString('es-CO') }}
+                                        </span>
+                                        <span v-else class="text-muted">
+                                            NO tiene servicio
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Matriculas -->
+            <section v-else-if="vistaActual === 'Matriculas'">
+                <h1>Informe de Cartera</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Año:</label>
+                        <select v-model="filtroAnio">
+                            <option v-for="an in aniosDisponibles">{{ an }}</option>
+                        </select>
+                        <label>Nivel:</label>
+                        <select v-model="filtroNivelCartera">
+                            <option value="">Todos</option>
+                            <option v-for="nivel in nivelesUnicos">{{ nivel }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarReporteCartera" class="btn-main">🔍 Generar Informe</button>
+                </div>      
+                <section v-else-if="vistaActual === 'Matriculas'"></section>    
+                    <div class="card">
+                        <h2>Deudores de Matrícula ({{ filtroAnio }})</h2>
+                        <div class="report-table-container">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Nivel</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="est in reporteCartera.deudoresMatricula">
+                                        <td>{{ est.ID_Estudiante }}</td>
+                                        <td>{{ est.Primer_Nombre }} {{ est.Segundo_Nombre }} {{ est.Primer_Apellido }} {{ est.Segundo_Apellido }}</td>
+                                        <td>{{ est.Nivel }}</td>
+                                    </tr>
+                                    <tr v-if="!reporteCartera.deudoresMatricula.length">
+                                        <td colspan="3" class="empty-state">
+                                            No hay deudores de matrícula.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                        
+            </section>
+
+            <!-- Estado de pensiones -->
+            <section v-else-if="vistaActual === 'cartera'">
+                <h1>Informe de Cartera</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Año:</label>
+                        <select v-model="filtroAnio">
+                            <option v-for="an in aniosDisponibles">{{ an }}</option>
+                        </select>
+                        <label>Nivel:</label>
+                        <select v-model="filtroNivelCartera">
+                            <option value="">Todos</option>
+                            <option v-for="nivel in nivelesUnicos">{{ nivel }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarReporteCartera" class="btn-main">🔍 Generar Informe</button>
+                </div>
+                <div v-if="reporteGenerado === 'cartera'">
+                        <div class="card">
+                            <h2>Estado de Pensiones ({{ filtroAnio }})</h2>
+                            <div class="report-table-container">
+                                <table class="report-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Estudiante</th>
+                                            <th v-for="mes in meses">{{ mes.substring(0,3) }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="est in reporteCartera.estadoPensiones">
+                                            <td>{{ est.nombre }}</td>
+                                            <td v-for="mes in meses" :class="est.pagos[mes] ? 'status-paid' : 'status-unpaid'">
+                                                {{ est.pagos[mes] ? '✅' : '❌' }}
+                                            </td>
+                                        </tr>
+                                        <tr v-if="!reporteCartera.estadoPensiones.length">
+                                            <td :colspan="meses.length + 1" class="empty-state">
+                                                No hay estudiantes para mostrar.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+            </section>
+
+            <!-- Loncheras -->
+            <section v-else-if="vistaActual === 'loncheras'">
+                <h1>Informe de Estado de Loncheras</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Año:</label>
+                        <select v-model="filtroAnio">
+                            <option v-for="an in aniosDisponibles">{{ an }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarReporteLoncheras" class="btn-main">
+                        🔍 Generar Informe
+                    </button>
+                </div>
+                <div v-if="reporteGenerado === 'loncheras'">
+                    <div class="card">
+                        <h2>Estado de Pagos de Lonchera ({{ filtroAnio }})</h2>
+                        <div class="report-table-container">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Estudiante</th>
+                                        <th v-for="mes in meses">{{ mes.substring(0,3) }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="est in reporteLoncheras">
+                                        <td>{{ est.nombre }}</td>
+                                        <td v-for="mes in meses" :class="est.pagos[mes] ? 'status-paid' : 'status-unpaid'">
+                                            {{ est.pagos[mes] ? '✅' : '❌' }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!reporteLoncheras.length">
+                                        <td :colspan="meses.length + 1" class="empty-state">
+                                            No hay estudiantes con servicio de lonchera para mostrar.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recaudos -->
+            <section v-else-if="vistaActual === 'recaudos'">
+                <h1>Informe de Recaudos</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Desde:</label>
+                        <input type="date" v-model="filtroFechaInicioRecaudos">
+                        <label>Hasta:</label>
+                        <input type="date" v-model="filtroFechaFinRecaudos">
+                    </div>
+                    <button @click="generarReporteRecaudos" class="btn-main">
+                        🔍 Generar Informe
+                    </button>
+                </div>
+                <div class="card" v-if="reporteGenerado === 'recaudos'">
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Método de Pago</th>
+                                    <th class="text-right">Total Recaudado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in reporteRecaudos">
+                                    <td><strong>{{ item.metodo }}</strong></td>
+                                    <td class="text-right">${{ item.total.toLocaleString('es-CO') }}</td>
+                                </tr>
+                                <tr v-if="!reporteRecaudos.length">
+                                    <td colspan="2" class="empty-state">
+                                        No hay recaudos en el rango de fechas.
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>GRAN TOTAL</strong></td>
+                                    <td class="text-right">
+                                        <strong>${{ totalGeneralRecaudado.toLocaleString('es-CO') }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Informe financiero -->
+            <section v-else-if="vistaActual === 'financiero'">
+                <h1>Informe Financiero</h1>
+                <div class="card actions-toolbar">
+                    <div class="filter-group">
+                        <label>Año de Servicio:</label>
+                        <select v-model="filtroAnio">
+                            <option v-for="an in aniosDisponibles">{{ an }}</option>
+                        </select>
+                    </div>
+                    <button @click="generarReporteFinanciero" class="btn-main">
+                        🔍 Generar Informe
+                    </button>
+                </div>
+                <div v-if="reporteGenerado === 'financiero'">
+                    <div class="card">
+                        <h2>Total Recaudado por Matrícula (Pagos recibidos en {{ filtroAnio }})</h2>
+                        <h3>
+                            <strong class="text-muted">
+                                ${{ reporteFinanciero.totalMatricula.toLocaleString('es-CO') }}
+                            </strong>
+                        </h3>
+                    </div>
+                    <div class="card">
+                        <h2>Ingresos por Mes de Servicio (Pensiones y Loncheras)</h2>
+                        <div class="report-table-container">
+                            <table class="report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mes de Servicio</th>
+                                        <th class="text-right">Ingreso Pensiones</th>
+                                        <th class="text-right">Ingreso Loncheras</th>
+                                        <th class="text-right">Total Mensual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="fila in reporteFinanciero.ingresosPorMes">
+                                        <td><strong>{{ fila.mes }}</strong></td>
+                                        <td class="text-right">${{ fila.Pension.toLocaleString('es-CO') }}</td>
+                                        <td class="text-right">${{ fila.Lonchera.toLocaleString('es-CO') }}</td>
+                                        <td class="text-right"><strong>${{ fila.Total.toLocaleString('es-CO') }}</strong></td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td><strong>TOTALES</strong></td>
+                                        <td class="text-right">${{ totalIngresos.Pension.toLocaleString('es-CO') }}</td>
+                                        <td class="text-right">${{ totalIngresos.Lonchera.toLocaleString('es-CO') }}</td>
+                                        <td class="text-right"><strong>${{ totalIngresos.Total.toLocaleString('es-CO') }}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Estadísticas -->
+            <section v-else-if="vistaActual === 'estadisticas'">
+                <h1>Estadísticas del Liceo</h1>
+                <div class="card actions-toolbar">
+                    <button @click="generarEstadisticas" class="btn-main">
+                        📊 Generar Estadísticas
+                    </button>
+                </div>
+                <div v-if="estadisticasGeneradas" class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Estudiantes por Nivel</h3>
+                        <table>
+                            <tbody>
+                                <tr v-for="(count, nivel) in estadisticas.porNivel">
+                                    <td><strong>{{ nivel }}:</strong></td>
+                                    <td>{{ count }} estudiante(s)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Estudiantes por Jornada</h3>
+                        <table>
+                            <tbody>
+                                <tr v-for="(count, jornada) in estadisticas.porJornada">
+                                    <td><strong>{{ jornada }}:</strong></td>
+                                    <td>{{ count }} estudiante(s)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Rango de Edades (Activos)</h3>
+                        <table>
+                            <tbody>
+                                <tr v-for="(count, rango) in estadisticas.porEdad">
+                                    <td><strong>{{ rango }} años:</strong></td>
+                                    <td>{{ count }} estudiante(s)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Estado de Estudiantes</h3>
+                        <table>
+                            <tbody>
+                                <tr v-for="(list, estado) in estadisticas.porEstado">
+                                    <td><strong>{{ estado }}:</strong></td>
+                                    <td>{{ list.length }} estudiante(s)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="stat-card span-2">
+                        <h3>Distribución por Nivel</h3>
+                        <div class="stats-chart-container">
+                            <div class="chart-canvas">
+                                <canvas id="graficoNiveles"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Certificados -->
+            <section v-else-if="vistaActual === 'certificados'">
+                <h1>Generador de Certificados</h1>
+                <div class="card actions-toolbar certificate-controls">
+                    <select v-model="estudianteCertificadoId">
+                        <option disabled value="">-- Seleccione un estudiante --</option>
+                        <option v-for="est in estudiantesActivos" :value="est.ID_Estudiante">
+                            {{ est.Primer_Nombre }} {{ est.Primer_Apellido }}
+                        </option>
+                    </select>
+                    <button @click="imprimirCertificado" class="btn-main" :disabled="!estudianteCertificadoId">
+                        🖨️ Imprimir Certificado
+                    </button>
+                </div>
+                <div v-if="estudianteCertificadoId" class="certificate-container">
+                    <img :src="logoBase64" class="certificate-watermark">
+                    <div class="certificate-header">
+                        <h1>Liceo Pedagogico Goticas de Colores</h1>
+                        <p>Ipiales - Nariño</p>
+                    </div>
+                    <div class="certificate-body">
+                        <h2>CERTIFICADO DE ESTUDIOS</h2>
+                        <p>
+                            La suscrita Directora del
+                            <strong>Liceo Pedagogico Goticas de Colores</strong>, legalmente constituido,
+                            por medio del presente certifica que:
+                        </p>
+                        <p>
+                            El/La estudiante
+                            <strong>{{ estudianteCertificado.Primer_Nombre }} {{ estudianteCertificado.Segundo_Nombre }} {{ estudianteCertificado.Primer_Apellido }} {{ estudianteCertificado.Segundo_Apellido }}</strong>,
+                            se encuentra debidamente matriculado(a) en esta institución para el presente año lectivo
+                            en el nivel de <strong>{{ estudianteCertificado.Nivel }}</strong>, en la jornada de la
+                            <strong>{{ estudianteCertificado.Jornada.toLowerCase() }}</strong>,
+                            desde el día {{ formatearFechaLarga(estudianteCertificado.Fecha_matricula) }}.
+                        </p>
+                        <p>
+                            Se expide el presente certificado en Ipiales,
+                            a los {{ diaActual }} días del mes de {{ mesActualLetras }} de {{ anioActual }}.
+                        </p>
+                    </div>
+                    <div class="certificate-footer">
+                        <div class="signature-line"></div>
+                        <p>
+                            <strong>ANA SOFÍA ERAZO RUIZ</strong><br>
+                            Directora
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- MODALES -->
+        <div class="modal-overlay" v-if="modalVisible">
+            <div class="modal-content">
+                <h2>{{ esNuevoEstudiante ? 'Agregar Nuevo Estudiante' : 'Editar Estudiante' }}</h2>
+                <div class="modal-body">
+                    <form @submit.prevent="guardarEstudiante" class="form-grid">
+                        <div class="form-group span-2">
+                            <label>Primer Nombre</label>
+                            <input v-model="formEstudiante.Primer_Nombre" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Segundo Nombre</label>
+                            <input v-model="formEstudiante.Segundo_Nombre">
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Primer Apellido</label>
+                            <input v-model="formEstudiante.Primer_Apellido" required>
+                        </div>
+                        <div class="form-group span-2">
+                            <label>Segundo Apellido</label>
+                            <input v-model="formEstudiante.Segundo_Apellido">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Nacimiento</label>
+                            <input type="date" v-model="formEstudiante.Fecha_Nacimiento">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Matrícula</label>
+                            <input type="date" v-model="formEstudiante.Fecha_matricula" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nivel</label>
+                            <select v-model="formEstudiante.Nivel" required>
+                                <option>PARVULOS</option>
+                                <option>PREJARDÍN</option>
+                                <option>JARDÍN</option>
+                                <option>TRANSICIÓN</option>
+                                <option>PRIMERO</option>
+                                <option>SEGUNDO</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Jornada</label>
+                            <select v-model="formEstudiante.Jornada" required>
+                                <option>MAÑANA</option>
+                                <option>TARDE</option>
+                                <option>DOBLE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Matricula</label>
+                            <input type="number" v-model.number="formEstudiante.Valor_Matricula" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Pension</label>
+                            <input type="number" v-model.number="formEstudiante.Valor_Pension" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select v-model="formEstudiante.Estado">
+                                <option>ACTIVO</option>
+                                <option>RETIRADO(A)</option>
+                                <option>EXENTO</option>
+                            </select>
+                        </div>
+                        <div class="form-group" v-if="formEstudiante.Estado === 'RETIRADO(A)'">
+                            <label>Fecha de Retiro</label>
+                            <input type="date" v-model="formEstudiante.Fecha_retiro">
+                        </div>
+                        <div class="form-group">
+                            <label>Toma Lonchera</label>
+                            <select v-model="formEstudiante.Toma_Lonchera">
+                                <option>SI</option>
+                                <option>NO</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-actions">
+                    <button @click="modalVisible = false" class="btn-secondary">
+                        Cancelar
+                    </button>
+                    <button @click="guardarEstudiante" class="btn-main" :disabled="isSaving">
+                        {{ isSaving ? 'Guardando...' : 'Guardar' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="alertaModal.visible" @click="alertaModal.visible = false">
+            <div class="modal-content alerta-modal" @click.stop>
+                <div class="alerta-header" :class="alertaModal.tipo">
+                    <h2>{{ alertaModal.titulo }}</h2>
+                </div>
+                <div class="modal-body">
+                    <p>{{ alertaModal.mensaje }}</p>
+                </div>
+                <div class="form-actions">
+                    <button @click="alertaModal.visible = false" class="btn-main">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="historialModal.visible" @click="historialModal.visible = false">
+            <div class="modal-content" @click.stop>
+                <h2>
+                    Historial de: {{ historialModal.estudiante.Primer_Nombre }} {{ historialModal.estudiante.Primer_Apellido }}
+                </h2>
+                <div class="modal-body">
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Pago</th>
+                                    <th>Concepto</th>
+                                    <th># Comp.</th>
+                                    <th>Valor Pagado</th>
+                                    <th>Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="pago in historialModal.pagos">
+                                    <td>{{ formatearFecha(pago.Fecha_Pago) }}</td>
+                                    <td>
+                                        {{ pago.Mes_Pension ? `${pago.Concepto} (${pago.Mes_Pension})` : pago.Concepto }}
+                                    </td>
+                                    <td>{{ pago.Numero_comprobante }}</td>
+                                    <td class="text-right">
+                                        ${{ pago.Valor_Pagado.toLocaleString('es-CO') }}
+                                    </td>
+                                    <td>{{ pago.Observaciones }}</td>
+                                </tr>
+                                <tr v-if="!historialModal.pagos.length">
+                                    <td colspan="5" class="empty-state">
+                                        No tiene pagos registrados.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button @click="descargarHistorial" class="btn-secondary">
+                        Descargar CSV
+                    </button>
+                    <button @click="historialModal.visible = false" class="btn-main">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" v-if="detalleModal.visible" @click="detalleModal.visible = false">
+            <div class="modal-content" @click.stop>
+                <h2>Detalle de Pagos de {{ detalleModal.concepto }}</h2>
+                <h3>{{ detalleModal.estudianteNombre }}</h3>
+                <div class="modal-body">
+                    <div class="report-table-container">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha Pago</th>
+                                    <th>Mes Pagado</th>
+                                    <th># Comp.</th>
+                                    <th>Valor Pagado</th>
+                                    <th>Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="pago in detalleModal.pagos">
+                                    <td>{{ formatearFecha(pago.Fecha_Pago) }}</td>
+                                    <td>{{ pago.Mes_Pension }}</td>
+                                    <td>{{ pago.Numero_comprobante }}</td>
+                                    <td class="text-right">
+                                        ${{ pago.Valor_Pagado.toLocaleString('es-CO') }}
+                                    </td>
+                                    <td>{{ pago.Observaciones }}</td>
+                                </tr>
+                                <tr v-if="!detalleModal.pagos.length">
+                                    <td colspan="5" class="empty-state">
+                                        Sin pagos para este concepto.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button @click="detalleModal.visible = false" class="btn-main">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- Fin #app -->
+
+    <script src="script.js"></script>
+</body>
+</html>
